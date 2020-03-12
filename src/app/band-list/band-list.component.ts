@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
-import { Observable, Subject, merge } from "rxjs";
-import { map, mergeMap, startWith } from "rxjs/operators";
+import { ActivatedRoute } from "@angular/router";
+import { Observable, Subject, merge, combineLatest } from "rxjs";
+import { tap, map, mergeMap, startWith, mapTo } from "rxjs/operators";
 
 // import { AutoUnsubscribe } from "../../decorators/auto-unsubscribe";
 
@@ -16,20 +17,37 @@ export class BandListComponent implements OnInit, OnDestroy {
   model$: Observable<{ bands: Band[]; isLoading: boolean }>;
   refreshClickSubject$: Subject<any> = new Subject();
 
-  constructor(private bandDataService: BandDataService) {}
+  constructor(
+    private activatedRoute: ActivatedRoute,
+    private bandDataService: BandDataService
+  ) {}
 
   ngOnInit() {
     const refreshDataClick$ = this.refreshClickSubject$.asObservable();
-    const refreshTrigger$ = refreshDataClick$.pipe(startWith({}));
-    const bandList$ = refreshTrigger$.pipe(mergeMap(_ => this.getData()));
+    const refreshTrigger$ = refreshDataClick$.pipe(startWith({}), mapTo({}));
+    const combinedTrigger$ = combineLatest([
+      refreshTrigger$,
+      this.activatedRoute.queryParams
+    ]).pipe(
+      map(([_, params]) => {
+        if (params.active === undefined) {
+          return undefined;
+        }
+        return params.active === "true";
+      })
+    );
+
+    const bandList$ = combinedTrigger$.pipe(
+      mergeMap((isActive: boolean) => this.getData(isActive))
+    );
     this.model$ = merge(
       refreshTrigger$.pipe(map(_ => ({ bands: [], isLoading: true }))),
       bandList$.pipe(map(bands => ({ bands, isLoading: false })))
     );
   }
 
-  private getData(): Observable<Band[]> {
-    return this.bandDataService.getBands().pipe(shareReplay());
+  private getData(isActive: boolean): Observable<Band[]> {
+    return this.bandDataService.getBands(isActive).pipe(shareReplay());
   }
 
   ngOnDestroy() {}
