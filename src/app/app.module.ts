@@ -6,6 +6,7 @@ import { RouterModule, Routes } from "@angular/router";
 import { AppComponent } from "./app.component";
 import { BandDataService } from "./band-data.service";
 import { BandListComponent } from "./band-list/band-list.component";
+import { UserDataService } from './user-data.service';
 
 const routes: Routes = [
   { path: "bands", component: BandListComponent },
@@ -15,7 +16,7 @@ const routes: Routes = [
 @NgModule({
   declarations: [AppComponent, BandListComponent],
   imports: [BrowserModule, HttpClientModule, RouterModule.forRoot(routes)],
-  providers: [BandDataService],
+  providers: [BandDataService, UserDataService],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

@@ -1,11 +1,12 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
-import { Observable, Subject, merge, combineLatest } from "rxjs";
+import { Observable, Subject, merge, combineLatest, forkJoin } from "rxjs";
 import { tap, map, mergeMap, startWith, mapTo } from "rxjs/operators";
 
 // import { AutoUnsubscribe } from "../../decorators/auto-unsubscribe";
 
 import { BandDataService } from "../band-data.service";
+import { UserDataService } from "../user-data.service";
 import { Band } from "../model";
 import { shareReplay } from "rxjs/operators";
 
@@ -19,7 +20,8 @@ export class BandListComponent implements OnInit, OnDestroy {
 
   constructor(
     private activatedRoute: ActivatedRoute,
-    private bandDataService: BandDataService
+    private bandDataService: BandDataService,
+    private _us: UserDataService
   ) {}
 
   ngOnInit() {
@@ -38,8 +40,16 @@ export class BandListComponent implements OnInit, OnDestroy {
     );
 
     const bandList$ = combinedTrigger$.pipe(
-      mergeMap((isActive: boolean) => this.getData(isActive))
+      mergeMap((isActive: boolean) =>
+        forkJoin(this.getData(isActive), this._us.currentUser)
+      ),
+      map(([bands, currentUser]) =>
+        bands.map(b =>
+          b.id === currentUser.favoriteBandId ? { ...b, favorite: true } : b
+        )
+      )
     );
+
     this.model$ = merge(
       refreshTrigger$.pipe(map(_ => ({ bands: [], isLoading: true }))),
       bandList$.pipe(map(bands => ({ bands, isLoading: false })))
