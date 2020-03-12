@@ -1,8 +1,11 @@
 <h2>Bands</h2>
-<div class="row" *ngIf="bandList$ | async as bandList else loading">
+<div class="row" *ngIf="model$ | async as model">
   <div class="col-sm-12">
     <div class="form-group">
-      <button type="button" class="btn btn-primary" (click)="refreshClickSubject$.next()">Refresh Data</button>
+      <button type="button"
+        class="btn btn-primary"
+        [disabled]="model.isLoading"
+        (click)="refreshClickSubject$.next()">Refresh Data</button>
     </div>
   
     <table class="table">
@@ -14,7 +17,10 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let band of bandList">
+        <tr colspan="3" *ngIf="model.isLoading">
+          <td>Loading...</td>
+        </tr>
+        <tr *ngFor="let band of model.bands">
           <td>{{ band.name }}</td>
           <td>{{ band.formationYear }}</td>
           <td>{{ band.isActive }}</td>
@@ -23,7 +29,4 @@
     </table>
   </div>
 </div>
-<ng-template #loading>
-  <p>loading...</p>
-</ng-template>
 <!-- <pre>{{bandList$ | async | json}}</pre> -->
